@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WEATHER.IO — Search History</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #00e5ff;
+      --accent2: #ff3c5f;
+      --text: #e8e8f0;
+      --muted: #5a5a72;
+      --card: #13131c;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+      background: rgba(10,10,15,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+    }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+
+    .page-header {
+      position: relative; z-index: 1;
+      padding: 4rem 2rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+
+    .page-header-left {}
+
+    .page-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .clear-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      background: transparent;
+      border: 1px solid var(--accent2);
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: var(--accent2);
+      color: var(--bg);
+    }
+
+    .stats-bar {
+      position: relative; z-index: 1;
+      max-width: 900px;
+      margin: 0 auto 1.5rem;
+      padding: 0 2rem;
+      display: flex; gap: 2rem;
+    }
+
+    .stat-pill {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stat-pill span { color: var(--accent); }
+
+    /* TABLE */
+    .history-wrap {
+      position: relative; z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 5rem;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+    }
+
+    .history-table thead tr {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-table thead th {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    .history-table tbody tr {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .history-table tbody tr:hover { background: var(--surface); }
+
+    .history-table tbody td {
+      padding: 0.9rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .td-city {
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+
+    .td-emoji { font-size: 1.3rem; }
+
+    .td-city-name {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .td-temp {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+
+    .td-desc {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .td-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .td-action a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .td-action a:hover { border-color: var(--accent); }
+
+    /* EMPTY */
+    .empty-history {
+      text-align: center;
+      padding: 5rem 1rem;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .empty-history a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* INDEX BADGE */
+    .idx-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      padding: 0.15rem 0.4rem;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      .page-header { padding: 3rem 1rem 1.5rem; }
+      .history-wrap { padding: 0 1rem 3rem; }
+      .stats-bar { padding: 0 1rem; }
+      .history-table thead { display: none; }
+      .history-table tbody tr { display: block; padding: 0.75rem 1rem; }
+      .history-table tbody td { display: block; padding: 0.15rem 0; border: none; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">WEATHER.IO</div>
+  <div class="nav-links">
+    <a href="/home">Home</a>
+    <a href="/city" class="active">History</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-label">// Search log</div>
+    <h1 class="page-title">CITY HISTORY</h1>
+  </div>
+  {% if history %}
+  <form method="post" action="/city/clear">
+    <button class="clear-btn" type="submit" onclick="return confirm('Clear all history?')">
+      ✕ Clear All
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="stats-bar">
+  <div class="stat-pill">Total searches: <span>{{ history | length }}</span></div>
+</div>
+
+<div class="history-wrap">
+  {% if history %}
+  <table class="history-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>City</th>
+        <th>Temp</th>
+        <th>Condition</th>
+        <th>Searched</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in history %}
+      <tr>
+        <td><span class="idx-badge">{{ loop.index }}</span></td>
+        <td>
+          <div class="td-city">
+            <span class="td-emoji">{{ item.emoji }}</span>
+            <span class="td-city-name">{{ item.city }}</span>
+          </div>
+        </td>
+        <td>
+          <span class="td-temp">{{ item.temp_c }}°C</span>
+          <span class="td-desc"> / {{ item.temp_f }}°F</span>
+        </td>
+        <td class="td-desc">{{ item.description }}</td>
+        <td class="td-time">{{ item.searched_at }}</td>
+        <td class="td-action">
+          <a href="/home?city={{ item.query }}">Search again →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-history">
+    NO SEARCHES YET — <a href="/home">GO SEARCH A CITY</a>
+  </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

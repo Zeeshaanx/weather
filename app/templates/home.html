@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WEATHER.IO — City Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #00e5ff;
+      --accent2: #ff3c5f;
+      --text: #e8e8f0;
+      --muted: #5a5a72;
+      --card: #13131c;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+      background: rgba(10,10,15,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+    }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+
+    /* HERO */
+    .hero {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 5rem 1rem 3rem;
+      text-align: center;
+    }
+
+    .hero-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      border: 1px solid var(--accent);
+      padding: 0.25rem 0.75rem;
+      display: inline-block;
+    }
+
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      line-height: 1;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+
+    .hero-title span { color: var(--accent); }
+
+    .hero-sub {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    /* SEARCH */
+    .search-wrap {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center;
+      padding: 0 1rem 4rem;
+    }
+
+    .search-form {
+      display: flex;
+      width: 100%; max-width: 600px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: border-color 0.2s;
+    }
+
+    .search-form:focus-within { border-color: var(--accent); }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none; outline: none;
+      padding: 1rem 1.25rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .search-input::placeholder { color: var(--muted); }
+
+    .search-btn {
+      background: var(--accent);
+      border: none; cursor: pointer;
+      padding: 0 1.5rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--bg);
+      font-weight: 700;
+      transition: background 0.2s;
+    }
+
+    .search-btn:hover { background: #33eaff; }
+
+    /* ERROR */
+    .error-box {
+      position: relative; z-index: 1;
+      max-width: 600px; margin: -2rem auto 2rem;
+      background: rgba(255,60,95,0.1);
+      border: 1px solid var(--accent2);
+      padding: 0.75rem 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent2);
+    }
+
+    /* WEATHER CARD */
+    .weather-section {
+      position: relative; z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem 5rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .weather-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 1px;
+    }
+
+    .wm-left {
+      background: var(--card);
+      padding: 2.5rem;
+    }
+
+    .wm-city {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      letter-spacing: 1px;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .wm-country {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .wm-temp {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 6rem;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .wm-temp-unit {
+      font-size: 2rem;
+      color: var(--muted);
+    }
+
+    .wm-alt-temp {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .wm-desc {
+      margin-top: 1.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .wm-right {
+      background: var(--card);
+      padding: 2.5rem;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+
+    .wm-emoji { font-size: 5rem; text-align: right; line-height: 1; }
+
+    .stat-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      flex: 1;
+      margin-top: 1.5rem;
+    }
+
+    .stat {
+      background: var(--card);
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    /* FORECAST */
+    .forecast-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-top: none;
+    }
+
+    .forecast-card {
+      background: var(--surface);
+      padding: 1.25rem;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .forecast-card:hover { background: var(--card); }
+
+    .fc-day {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+
+    .fc-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .fc-emoji { font-size: 1.8rem; margin: 0.25rem 0; }
+
+    .fc-temps {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text);
+    }
+
+    .fc-min { color: var(--muted); }
+
+    /* TIMESTAMP */
+    .timestamp {
+      text-align: right;
+      margin-top: 0.75rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 2rem 1rem 6rem;
+      color: var(--muted);
+    }
+
+    .empty-grid {
+      display: flex; justify-content: center; gap: 2rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .empty-city {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--border);
+      letter-spacing: 2px;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+      text-decoration: none;
+      color: var(--muted);
+    }
+
+    .empty-city:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .weather-main { grid-template-columns: 1fr; }
+      .wm-emoji { text-align: left; margin-bottom: 1rem; }
+      .forecast-row { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">WEATHER.IO</div>
+  <div class="nav-links">
+    <a href="/home" class="active">Home</a>
+    <a href="/city">History</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-label">// Real-time weather data</div>
+  <h1 class="hero-title">CITY<span>.</span>WEATHER</h1>
+  <p class="hero-sub">Enter any city — get instant conditions + 3-day forecast</p>
+</section>
+
+<div class="search-wrap">
+  <form class="search-form" method="post" action="/home">
+    <input
+      class="search-input"
+      type="text"
+      name="city"
+      placeholder="Tokyo, New York, Mumbai, London..."
+      value="{{ city_query }}"
+      autofocus
+      required
+    />
+    <button class="search-btn" type="submit">Search →</button>
+  </form>
+</div>
+
+{% if error %}
+<div style="display:flex;justify-content:center;position:relative;z-index:1;">
+  <div class="error-box" style="margin:0 1rem -2rem;">
+    ⚠ {{ error }}
+  </div>
+</div>
+{% endif %}
+
+{% if weather %}
+<div class="weather-section">
+
+  <div class="weather-main">
+    <div class="wm-left">
+      <div class="wm-city">{{ weather.city }}</div>
+      <div class="wm-country">{{ weather.country }}</div>
+      <div class="wm-temp">{{ weather.temp_c }}<span class="wm-temp-unit">°C</span></div>
+      <div class="wm-alt-temp">{{ weather.temp_f }}°F &nbsp;|&nbsp; Feels like {{ weather.feels_like_c }}°C / {{ weather.feels_like_f }}°F</div>
+      <div class="wm-desc">{{ weather.emoji }} {{ weather.description }}</div>
+    </div>
+
+    <div class="wm-right">
+      <div class="wm-emoji">{{ weather.emoji }}</div>
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="stat-label">Humidity</div>
+          <div class="stat-value">{{ weather.humidity }}%</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Wind</div>
+          <div class="stat-value">{{ weather.wind_kmph }} km/h</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Visibility</div>
+          <div class="stat-value">{{ weather.visibility }} km</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">UV Index</div>
+          <div class="stat-value">{{ weather.uv_index }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if weather.forecast %}
+  <div class="forecast-row">
+    {% for day in weather.forecast %}
+    <div class="forecast-card">
+      <div class="fc-day">{{ day.day }}</div>
+      <div class="fc-date">{{ day.date }}</div>
+      <div class="fc-emoji">{{ day.emoji }}</div>
+      <div class="fc-temps">
+        {{ day.max_temp_c }}°C <span class="fc-min">/ {{ day.min_temp_c }}°C</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="timestamp">Last fetched: {{ weather.fetched_at }}</div>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <p style="font-family:'Space Mono',monospace;font-size:0.75rem;letter-spacing:2px;">TRY A CITY →</p>
+  <div class="empty-grid">
+    {% for city in ["Tokyo", "New York", "London", "Mumbai", "Sydney", "Dubai"] %}
+    <a class="empty-city" href="/home?city={{ city }}">{{ city }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+</body>
+</html>
