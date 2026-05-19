@@ -116,3 +116,4 @@ city-weather-api/
 - No database, no auth — kept minimal for Kubernetes lab use
 - `root_path="/weather"` in FastAPI ensures all URL generation is prefix-aware behind Nginx
 "# weather" 
+"# weather" 
